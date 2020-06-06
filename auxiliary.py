@@ -9,10 +9,30 @@ def read_results():
     results_nlopt = pd.read_pickle("results_nlopt").drop(columns=drop)
     results_nfxp = pd.read_pickle("results_nfxp").drop(columns=drop)
     
-    for algorithm in [results_ipopt, results_nlopt, results_nfxp]:
-        algorithm.loc[algorithm["Converged"] == 0] = np.nan
+    algorithms = [results_ipopt, results_nlopt, results_nfxp]
+    for algorithm in algorithms:
+        algorithm.loc[(algorithm["Converged"] == 0) | (algorithm["RC"] < 6)] = np.nan
         algorithm.loc[algorithm["Converged"].isnull(), "Converged"] = 0
- 
+    
+    algorithms = [(results_ipopt, "MPEC (numerical)"), 
+                  (results_nlopt, "MPEC (numerical)"), 
+                  (results_nfxp, "NFXP (numerical)")]
+    for algorithm, approach in algorithms:
+        n_evaluations = algorithm.loc[(
+            slice(None), slice(None), slice(None), approach), "# of Func. Eval."]
+        if algorithm is results_ipopt:
+            algorithm.loc[(
+                slice(None), slice(None), slice(None), approach), 
+                "# of Func. Eval."] = n_evaluations*2
+        if algorithm is results_nlopt:
+            algorithm.loc[(
+                slice(None), slice(None), slice(None), approach), 
+                "# of Func. Eval."] = n_evaluations*(2*177)
+        if algorithm is results_nfxp:
+            algorithm.loc[(
+                slice(None), slice(None), slice(None), approach), 
+                "# of Func. Eval."] = n_evaluations*2            
+        
     return results_ipopt, results_nlopt, results_nfxp
 
 
